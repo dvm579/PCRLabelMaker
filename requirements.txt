@@ -1,0 +1,12 @@
+certifi==2021.10.8
+charset-normalizer==2.0.10
+idna==3.3
+pdfrw==0.4
+Pillow==9.0.0
+pycairo==1.20.1
+pypng==0.20220715.0
+PyQRCode==1.2.1
+reportlab==3.6.6
+requests==2.27.1
+urllib3==1.26.8
+userpaths==0.1.3
