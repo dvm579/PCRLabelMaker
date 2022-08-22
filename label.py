@@ -12,22 +12,22 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(96, 96))):
+def label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(144, 160))):
     # QR Code
     qrcode = pyqrcode.create(code_text)
     qrcode.png(resource_path(os.path.join('working', 'qr.png')), scale=3, quiet_zone=1)
     label_canvas.drawInlineImage(resource_path(os.path.join('working', 'qr.png')),
-                                 20.5, 19.5, width=55, height=55, preserveAspectRatio=True)
+                                 32, 32, width=80, height=80, preserveAspectRatio=True)
     # Text
     print_text = code_text[:3] + '-' + code_text[3:7] + '-' + code_text[7:]
     pdfmetrics.registerFont(TTFont('barcodefont', resource_path(os.path.join('fonts', 'SplineSansMono-Medium.ttf'))))
-    label_canvas.setFont('barcodefont', 9)
-    label_canvas.drawCentredString(x=48, y=8, text=print_text)
+    label_canvas.setFont('barcodefont', 15)
+    label_canvas.drawCentredString(x=72, y=8, text=print_text)
 
     # Branding
     pdfmetrics.registerFont(TTFont('brandingfont', resource_path(os.path.join('fonts', 'Americane Bold.ttf'))))
-    label_canvas.setFont('brandingfont', 9)
-    label_canvas.drawCentredString(x=48, y=80, text="PRISM HEALTH LAB")
+    label_canvas.setFont('brandingfont', 15)
+    label_canvas.drawCentredString(x=72, y=120, text="PRISM HEALTH LAB")
 
     # Save Page
     label_canvas.showPage()
@@ -41,7 +41,7 @@ def label_set(loc_id, qty):
 
     init_kit_num = codes.next_kit_num(codes.get_prev_kit_num(loc_id))
     kit_num = init_kit_num
-    label_set_canvas = canvas.Canvas(resource_path(os.path.join('working', 'labels.pdf')), pagesize=(96, 96))
+    label_set_canvas = canvas.Canvas(resource_path(os.path.join('working', 'labels.pdf')), pagesize=(144, 160))
     for i in range(qty):
         label(codes.make_barcode(loc_id=loc_id, kit_num=kit_num), label_canvas=label_set_canvas)
         if i + 1 != qty:
