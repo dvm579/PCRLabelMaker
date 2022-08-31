@@ -5,6 +5,7 @@ data_url = 'https://script.google.com/macros/s/AKfycbwQu-PKvYhFIIrl3GOF3_8wdG0kd
 
 
 def get_prev_kit_num(loc_id: str):
+    loc_id = loc_id.zfill(3)
     data_id = 'pcrlabel_' + loc_id
     return requests.get(url=data_url, params={'id': data_id}).content.decode('ascii')
 
