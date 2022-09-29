@@ -37,4 +37,3 @@ def make_barcode(loc_id: str, kit_num: str):
 def update_db(loc_id: str, new_kit_num: str):
     data_id = 'pcrlabel_' + loc_id
     return requests.post(url=data_url, params={'id': data_id, 'value': new_kit_num})
-

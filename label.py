@@ -14,7 +14,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(144, 144))):
+def square_label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(144, 144))):
     # QR Code
     qrcode = pyqrcode.create(code_text)
     qrcode.png(resource_path(os.path.join('working', 'qr.png')), scale=3, quiet_zone=1)
@@ -36,16 +36,61 @@ def label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label
     return label_canvas
 
 
-def label_set(loc_id, qty):
-    qty = int(qty)
-    if loc_id == '':
-        loc_id = '001'
+def rect_label(code_text:str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(306, 144))):
+    # QR Code
+    qrcode = pyqrcode.create(code_text)
+    qrcode.png(resource_path(os.path.join('working', 'qr.png')), scale=3, quiet_zone=1)
+    label_canvas.drawInlineImage(resource_path(os.path.join('working', 'qr.png')),
+                                 15, 38, width=80, height=80, preserveAspectRatio=True)
 
+    # Code Text
+    print_text = code_text[:3] + '-' + code_text[3:7] + '-' + code_text[7:]
+    pdfmetrics.registerFont(TTFont('barcodefont', resource_path(os.path.join('fonts', 'SplineSansMono-Medium.ttf'))))
+    label_canvas.setFont('barcodefont', 9)
+    label_canvas.drawCentredString(x=55, y=26, text=print_text)
+
+    # Branding
+    pdfmetrics.registerFont(TTFont('brandingfont', resource_path(os.path.join('fonts', 'Americane Bold.ttf'))))
+    label_canvas.setFont('brandingfont', 9)
+    label_canvas.drawCentredString(x=55, y=121, text="PRISM HEALTH LAB")
+    
+    # Written Patient Info Fields
+    label_canvas.drawRightString(x=296, y=115, text='______________________________________________________')
+    label_canvas.drawRightString(x=296, y=105, text='First Name')
+    label_canvas.drawRightString(x=296, y=70, text='______________________________________________________')
+    label_canvas.drawRightString(x=296, y=60, text='Last Name')
+    label_canvas.drawRightString(x=296, y=25, text='______________________________________________________')
+    label_canvas.drawRightString(x=296, y=15, text='Date of Birth')
+    label_canvas.setFont('brandingfont', 15)
+    label_canvas.drawString(x=155, y=25.5, text='/')
+    label_canvas.drawString(x=210, y=25.5, text='/')
+
+
+    # Save Page
+    label_canvas.showPage()
+    return label_canvas
+
+
+def label_set(loc_id, fmt, qty):
+    qty = int(qty)
+    if fmt == 'square':
+        label_set_canvas = canvas.Canvas(resource_path(os.path.join('working', 'labels.pdf')), pagesize=(144, 144))
+        if loc_id == '':
+            loc_id = '001'
+    elif fmt == 'rectangle':
+        label_set_canvas = canvas.Canvas(resource_path(os.path.join('working', 'labels.pdf')), pagesize=(306, 144))
+        if loc_id == '':
+            loc_id = '002'
+    else:
+        print('Error: Select a Format')
+        return
     init_kit_num = codes.next_kit_num(codes.get_prev_kit_num(loc_id))
     kit_num = init_kit_num
-    label_set_canvas = canvas.Canvas(resource_path(os.path.join('working', 'labels.pdf')), pagesize=(144, 144))
     for i in range(qty):
-        label(codes.make_barcode(loc_id=loc_id, kit_num=kit_num), label_canvas=label_set_canvas)
+        if fmt == 'square':
+            square_label(codes.make_barcode(loc_id=loc_id, kit_num=kit_num), label_canvas=label_set_canvas)
+        elif fmt == 'rectangle':
+            rect_label(codes.make_barcode(loc_id=loc_id, kit_num=kit_num), label_canvas=label_set_canvas)
         if i + 1 != qty:
             kit_num = codes.next_kit_num(kit_num)
     label_set_canvas.save()
@@ -73,26 +118,42 @@ def print_pdf(filename):
     with open(resource_path(os.path.join('output', filename)), "rb") as pdf_file:
         pdf_bytes = pdf_file.read()
     encoded_string = base64.b64encode(pdf_bytes).decode('ascii')
-    printjob = printnode.PrintJob(printer=70973429, title='PCR Labels', base64=encoded_string)
+    printjob = printnode.PrintJob(printer=71644274, title='PCR Labels', base64=encoded_string)
     os.remove(resource_path(os.path.join('output', filename)))
     print(printjob.id)
 
 
-def execute(action):
+def execute(action, label_format, label_file):
     if action.upper() == 'S':
         show_pdf(label_file)
     elif action.upper() == 'P':
+        shape_key = {'square': '30332 Square', 'rectangle': '30336 Small Multipurpose'}
+        input('\nPlease make sure your printer preferences are set properly for this paper.'
+              '\nGo to Settings -> Bluetooth and Devices -> Printers -> DYMO LabelWriter 450 -> Printer Preferences -> Advanced'
+              '\nUnder "Paper Size" select ' + shape_key[label_format] + '\nPress [Enter] to continue')
         print_pdf(label_file)
     else:
         action = input("""\nSorry, I didn't understand. Enter "S" to see the labels or "P" to print them to DYMO 1: """)
-        execute(action)
+        execute(action, label_format, label_file)
+
+
+def main():
+    # Input
+    shape = input("[S]aliva Direct or [N]asal Swab? ")
+    quantity = input("Qty: ")
+    location = input("Location ID (leave blank for default or Rapid Testing): ")
+
+    # Input Processing/Label Creation
+    if shape.upper() == 'S':
+        shape = 'square'
+    elif shape.upper() == 'N':
+        shape = 'rectangle'
+    label_file = label_set(location, shape, quantity)
+
+    # Label Output Flow
+    a = input("\nLabels Created.\n[S]how or [P]rint? ")
+    execute(a, shape, label_file)
 
 
 if __name__ == '__main__':
-    quantity = input("Qty: ")
-    location = input("Location ID (leave blank for default): ")
-    label_file = label_set(location, quantity)
-    a = input("\nLabels Created.\n[S]how or [P]rint?")
-    execute(a)
-
-
+    main()
