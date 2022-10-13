@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/PCRLabelMaker.iml" filepath="$PROJECT_DIR$/.idea/PCRLabelMaker.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/COVIDTestingLabelMaker.iml" filepath="$PROJECT_DIR$/.idea/COVIDTestingLabelMaker.iml" />
     </modules>
   </component>
 </project>
