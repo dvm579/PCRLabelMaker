@@ -14,7 +14,28 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def square_label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(144, 144))):
+def rapid_label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(252, 81))):
+    qr = pyqrcode.create(code_text)
+    qr.png(resource_path('qr.png'), scale=3, quiet_zone=1)
+
+    pdfmetrics.registerFont(TTFont('barcodefont', resource_path(os.path.join('fonts', 'SplineSansMono-Medium.ttf'))))
+    pdfmetrics.registerFont(TTFont('brandingfont', resource_path(os.path.join('fonts', 'Americane Bold.ttf'))))
+
+    label_canvas.drawInlineImage(resource_path('qr.png'), 5, 15, width=55, height=55, preserveAspectRatio=True)
+    label_canvas.setFont('barcodefont', 8)
+    label_canvas.drawRightString(60, 7, code_text)
+    label_canvas.setFont('brandingfont', 6)
+    label_canvas.drawRightString(236, 9, 'PHL Rapid Testing Services')
+
+    label_canvas.setFont('brandingfont', 12)
+    label_canvas.drawString(65, 55, 'Name: ______________________')
+    label_canvas.drawString(65, 21, 'DOB: _____/_____/___________')
+
+    label_canvas.showPage()
+    return label_canvas
+
+
+def saliva_label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(144, 144))):
     # QR Code
     qrcode = pyqrcode.create(code_text)
     qrcode.png(resource_path(os.path.join('working', 'qr.png')), scale=3, quiet_zone=1)
@@ -36,7 +57,7 @@ def square_label(code_text: str, label_canvas=canvas.Canvas(resource_path('sampl
     return label_canvas
 
 
-def rect_label(code_text:str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(306, 144))):
+def nasal_label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(306, 144))):
     # QR Code
     qrcode = pyqrcode.create(code_text)
     qrcode.png(resource_path(os.path.join('working', 'qr.png')), scale=3, quiet_zone=1)
@@ -65,32 +86,38 @@ def rect_label(code_text:str, label_canvas=canvas.Canvas(resource_path('sample_l
     label_canvas.drawString(x=155, y=25.5, text='/')
     label_canvas.drawString(x=210, y=25.5, text='/')
 
-
     # Save Page
     label_canvas.showPage()
     return label_canvas
 
 
-def label_set(loc_id, fmt, qty):
-    qty = int(qty)
-    if fmt == 'square':
+def label_set(loc_id: str, fmt: str, qty: int):
+    if fmt == 'S':
         label_set_canvas = canvas.Canvas(resource_path(os.path.join('working', 'labels.pdf')), pagesize=(144, 144))
         if loc_id == '':
             loc_id = '001'
-    elif fmt == 'rectangle':
+    elif fmt == 'N':
         label_set_canvas = canvas.Canvas(resource_path(os.path.join('working', 'labels.pdf')), pagesize=(306, 144))
         if loc_id == '':
             loc_id = '002'
+    elif fmt == 'R':
+        label_set_canvas = canvas.Canvas(resource_path(os.path.join('working', 'labels.pdf')), pagesize=(252, 81))
+        if loc_id == '':
+            loc_id = 'RT'
     else:
-        print('Error: Select a Format')
-        return
+        raise TypeError('Only "S", "N", and "R" allowed for format values')
+
     init_kit_num = codes.next_kit_num(codes.get_prev_kit_num(loc_id))
     kit_num = init_kit_num
     for i in range(qty):
-        if fmt == 'square':
-            square_label(codes.make_barcode(loc_id=loc_id, kit_num=kit_num), label_canvas=label_set_canvas)
-        elif fmt == 'rectangle':
-            rect_label(codes.make_barcode(loc_id=loc_id, kit_num=kit_num), label_canvas=label_set_canvas)
+        if fmt == 'S':
+            saliva_label(codes.make_barcode(loc_id=loc_id, kit_num=kit_num), label_canvas=label_set_canvas)
+        elif fmt == 'N':
+            nasal_label(codes.make_barcode(loc_id=loc_id, kit_num=kit_num), label_canvas=label_set_canvas)
+        elif fmt == 'R':
+            rapid_label(codes.make_barcode(loc_id=loc_id, kit_num=kit_num), label_canvas=label_set_canvas)
+        else:
+            raise TypeError('Only "S", "N", and "R" allowed for format values')
         if i + 1 != qty:
             kit_num = codes.next_kit_num(kit_num)
     label_set_canvas.save()
@@ -127,10 +154,12 @@ def execute(action, label_format, label_file):
     if action.upper() == 'S':
         show_pdf(label_file)
     elif action.upper() == 'P':
-        shape_key = {'square': '30332 Square', 'rectangle': '30336 Small Multipurpose'}
+        shape_key = {'S': '30332 Square', 'N': '30336 Small Multipurpose', 'R': '30252 Address'}
         input('\nPlease make sure your printer preferences are set properly for this paper.'
-              '\nGo to Settings -> Bluetooth and Devices -> Printers -> DYMO LabelWriter 450 -> Printer Preferences -> Advanced'
-              '\nUnder "Paper Size" select ' + shape_key[label_format] + '\nPress [Enter] to continue')
+              '\nGo to Settings -> Bluetooth and Devices -> Printers -> DYMO LabelWriter 450 -> Printer Preferences '
+              '-> Advanced'
+              '\nUnder "Paper Size" select ' + shape_key[label_format] +
+              '\nPress [Enter] to confirm the printer is ready.')
         print_pdf(label_file)
     else:
         action = input("""\nSorry, I didn't understand. Enter "S" to see the labels or "P" to print them to DYMO 1: """)
@@ -139,20 +168,16 @@ def execute(action, label_format, label_file):
 
 def main():
     # Input
-    shape = input("[S]aliva Direct or [N]asal Swab? ")
-    quantity = input("Qty: ")
-    location = input("Location ID (leave blank for default or Rapid Testing): ")
+    form = input("Select one:\n\n[S]aliva Direct\n[N]asal Swab\n[R]apid Test\n\n").upper()
+    quantity = int(input("Quantity: "))
+    location = ''
 
     # Input Processing/Label Creation
-    if shape.upper() == 'S':
-        shape = 'square'
-    elif shape.upper() == 'N':
-        shape = 'rectangle'
-    label_file = label_set(location, shape, quantity)
+    label_file = label_set(location, form, quantity)
 
     # Label Output Flow
     a = input("\nLabels Created.\n[S]how or [P]rint? ")
-    execute(a, shape, label_file)
+    execute(a, form, label_file)
 
 
 if __name__ == '__main__':

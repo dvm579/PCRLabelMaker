@@ -5,8 +5,11 @@ data_url = 'https://script.google.com/macros/s/AKfycbwQu-PKvYhFIIrl3GOF3_8wdG0kd
 
 
 def get_prev_kit_num(loc_id: str):
-    loc_id = loc_id.zfill(3)
-    data_id = 'pcrlabel_' + loc_id
+    if loc_id == 'RT':
+        data_id = 'rapidlabel'
+    else:
+        loc_id = loc_id.zfill(3)
+        data_id = 'pcrlabel_' + loc_id
     return requests.get(url=data_url, params={'id': data_id}).content.decode('ascii')
 
 
@@ -31,9 +34,15 @@ def next_kit_num(prev_kit_num):
 
 
 def make_barcode(loc_id: str, kit_num: str):
-    return loc_id + kit_num + mod10(loc_id + kit_num)
+    if loc_id == 'RT':
+        return loc_id + kit_num
+    else:
+        return loc_id + kit_num + mod10(loc_id + kit_num)
 
 
 def update_db(loc_id: str, new_kit_num: str):
-    data_id = 'pcrlabel_' + loc_id
+    if loc_id == 'RT':
+        data_id = 'rapidlabel'
+    else:
+        data_id = 'pcrlabel_' + loc_id
     return requests.post(url=data_url, params={'id': data_id, 'value': new_kit_num})
