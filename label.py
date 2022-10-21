@@ -14,20 +14,21 @@ def resource_path(relative_path):
 
 def rapid_label(code_text: str, label_canvas=canvas.Canvas(resource_path('sample_label.pdf'), pagesize=(252, 81))):
     qr = pyqrcode.create(code_text)
-    qr.png(resource_path('qr.png'), scale=3, quiet_zone=1)
+    qr.png(resource_path(os.path.join('working', 'qr.png')), scale=3, quiet_zone=1)
 
     pdfmetrics.registerFont(TTFont('barcodefont', resource_path(os.path.join('fonts', 'SplineSansMono-Medium.ttf'))))
     pdfmetrics.registerFont(TTFont('brandingfont', resource_path(os.path.join('fonts', 'Americane Bold.ttf'))))
 
-    label_canvas.drawInlineImage(resource_path('qr.png'), 5, 15, width=55, height=55, preserveAspectRatio=True)
+    label_canvas.drawInlineImage(resource_path(os.path.join('working', 'qr.png')), 5, 15,
+                                 width=55, height=55, preserveAspectRatio=True)
     label_canvas.setFont('barcodefont', 8)
     label_canvas.drawRightString(60, 7, code_text)
     label_canvas.setFont('brandingfont', 6)
     label_canvas.drawRightString(236, 9, 'PHL Rapid Testing Services')
 
     label_canvas.setFont('brandingfont', 12)
-    label_canvas.drawString(65, 55, 'Name: ______________________')
-    label_canvas.drawString(65, 21, 'DOB: _____/_____/___________')
+    label_canvas.drawString(65, 55, 'Name: _____________________________')
+    label_canvas.drawString(65, 21, 'D O B  : _______/_______/_____________')
 
     label_canvas.showPage()
     return label_canvas
